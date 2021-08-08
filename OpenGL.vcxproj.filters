@@ -21,6 +21,15 @@
     <ClCompile Include="src\Shader.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\Material.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\LightSource.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Mesh.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Shader.h">
@@ -30,6 +39,15 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\Camera.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Material.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\LightSource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Mesh.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -54,5 +72,8 @@
     <None Include="src\vertexSource.vert" />
     <None Include="src\lightCube.vert" />
     <None Include="src\lightCube.frag" />
+    <None Include=".gitattributes" />
+    <None Include=".gitignore" />
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

@@ -16,7 +16,7 @@ public:
 	unsigned int vertex, fragment;
 	unsigned int ID;  //Shader Program ID
 
-	// 使用 \ 激活着色器程序
+	// 使用(激活)着色器程序
 	void use();
 	// uniform工具函数
 	void setUniform(const std::string& name, bool value) const;

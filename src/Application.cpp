@@ -3,6 +3,8 @@
 #include <GLFW/glfw3.h>
 #include "Shader.h"
 #include "Camera.hpp"
+#include "Material.h"
+#include "LightSource.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include <glm/glm.hpp>
@@ -73,12 +75,25 @@ glm::vec3 cubePositions[] = {
   glm::vec3(1.5f,  0.2f, -1.5f),
   glm::vec3(-1.3f,  1.0f, -1.5f)
 };
+/*点光源坐标*/
+glm::vec3 pointLightPositions[] = {
+	glm::vec3(0.7f,  0.2f,  2.0f),
+	glm::vec3(2.3f, -3.3f, -4.0f),
+	glm::vec3(-4.0f,  2.0f, -12.0f),
+	glm::vec3(0.0f,  0.0f, -3.0f)
+};
 #pragma endregion
 
 #pragma region Camera Declare
 //Instantiate Camera class
 Camera camera(glm::vec3(0, 0, 3.0f), glm::vec3(0, 1.0f, 0));
 #pragma endregion
+
+#pragma region Light Declare
+LightPoint light(glm::vec3(5.0f, 5.0f, 2.5f), glm::vec3(glm::radians(180.0f - 45.0f), glm::radians(45.0f), 0));
+#pragma endregion
+
+#pragma region FullScreen
 
 bool isFullScreen = false;
 void FullScreen(GLFWwindow* window)
@@ -112,6 +127,7 @@ void MaxScreen(GLFWwindow* window)
 		isFullScreen = false;
 	}
 }
+#pragma endregion
 
 #pragma region Input Declare
 float lastX = SCR_WIDTH / 2.0f;
@@ -298,6 +314,15 @@ int main(void)
 	Shader* lightShader = new Shader("E:\\Code\\CPP\\OpenGL\\OpenGL\\src\\lightCube.vert", "E:\\Code\\CPP\\OpenGL\\OpenGL\\src\\lightCube.frag");
 #pragma  endregion
 
+#pragma region Init Material
+	Material *ourMaterial=new Material(
+		ourShader,
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		LoadImageToGpu("E:\\Code\\CPP\\OpenGL\\OpenGL\\src\\container2.png", GL_RGBA, GL_RGBA, 0),
+		LoadImageToGpu("E:\\Code\\CPP\\OpenGL\\OpenGL\\src\\container2_specular.png", GL_RGBA, GL_RGBA, 1),
+		32.0f);
+#pragma endregion
+
 #pragma region Init and Load Models to VAO,VBO
 	/* 创建VAO(顶点数组对象) */
 	unsigned int VAO;
@@ -317,8 +342,8 @@ int main(void)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 	// 光照属性
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 	// 纹理属性
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 	glEnableVertexAttribArray(2);
@@ -327,14 +352,6 @@ int main(void)
 	//位置属性
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-#pragma endregion
-
-#pragma region Init and Load Textures
-	/* 纹理贴图 */
-	unsigned int TexBufferA;
-	TexBufferA = LoadImageToGpu("E:\\Code\\CPP\\OpenGL\\OpenGL\\src\\container2.png", GL_RGBA, GL_RGBA, 0);
-	unsigned int TexBufferB;
-	TexBufferB = LoadImageToGpu("E:\\Code\\CPP\\OpenGL\\OpenGL\\src\\container2_specular.png", GL_RGBA, GL_RGBA, 1);
 #pragma endregion
 
 	/* Loop until the user closes the window */
@@ -349,20 +366,17 @@ int main(void)
 
 		/* 渲染指令 */
 		/* 设置屏幕颜色。*/
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);//当调用glClear函数，清除颜色缓冲之后，整个颜色缓冲都会被填充为glClearColor里所设置的颜色。
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);//当调用glClear函数，清除颜色缓冲之后，整个颜色缓冲都会被填充为glClearColor里所设置的颜色。
 		/* 清除缓冲区 */
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);//当前可写的颜色缓冲
 
-		glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-		//lightPos.x = 1.0f + sin(glfwGetTime()) * 2.0f;
-		//lightPos.y = sin(glfwGetTime() / 2.0f) * 1.0f;
 		for (int i = 0; i < 10; i++)
 		{
 #pragma region Prepare MVP matrices
 			//set Model matrix
 			glm::mat4 modelMat;
 			modelMat = glm::translate(modelMat, cubePositions[i]);
-			modelMat = glm::rotate(modelMat, (float)glfwGetTime() * glm::radians(-45.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+			modelMat = glm::rotate(modelMat, glm::radians(0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
 			//set View Matrices
 			glm::mat4 viewMat;
 			viewMat = camera.GetViewMatrix();
@@ -379,22 +393,21 @@ int main(void)
 			ourShader->setMat4("modelMat", modelMat);
 			ourShader->setMat4("viewMat", viewMat);
 			ourShader->setMat4("projMat", projMat);
-			ourShader->setVec3("objColor", 1.0f, 0.5f, 0.31f);
-			ourShader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);
 			ourShader->setVec3("viewPos", camera.Position);
-			ourShader->setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
-			ourShader->setUniform("material.diffuse", 0);
-			ourShader->setUniform("material.specular", 1);
-			ourShader->setUniform("material.shininess", 32.0f);
+
+			ourMaterial->shader->setVec3("material.ambient", ourMaterial->ambient);
+			ourMaterial->shader->setUniform("material.diffuse", 0);
+			ourMaterial->shader->setUniform("material.specular", 1);
+			ourMaterial->shader->setUniform("material.shininess", ourMaterial->shiness);
+
 			ourShader->setVec3("light.ambient", 0.1f, 0.1f, 0.1f);
-			ourShader->setVec3("light.diffuse", 1.0f, 1.0f, 1.0f); 
-			ourShader->setVec3("light.specular", 5.0f, 5.0f, 5.0f);
-			ourShader->setVec3("light.position", camera.Position);
-			ourShader->setUniform("light.constant", 1.0f);
-			ourShader->setUniform("light.linear", 0.22f);
-			ourShader->setUniform("light.quadratic", 0.20f);
-			ourShader->setVec3("light.direction", camera.Front);
-			ourShader->setUniform("light.cutOff", glm::cos(glm::radians(12.5f)));
+			ourShader->setVec3("light.diffuse", 0.8f, 0.8f, 0.8f);
+			ourShader->setVec3("light.specular", 0.1f, 0.1f, 0.1f);
+			ourShader->setVec3("light.position", light.position);
+			//ourShader->setVec3("light.direction", light.direction);
+			ourShader->setUniform("light.constant", light.constant);
+			ourShader->setUniform("light.linear", light.linear);
+			ourShader->setUniform("light.quadratic", light.quadratic);
 
 			glBindVertexArray(VAO);
 			//DrawCall
@@ -404,7 +417,7 @@ int main(void)
 #pragma region Prepare lightCube MVP matrices
 		//set Model matrix
 		glm::mat4 modelMat;
-		modelMat = glm::translate(modelMat, lightPos);
+		modelMat = glm::translate(modelMat, light.position);
 		modelMat = glm::scale(modelMat, glm::vec3(0.2f)); // a smaller cube
 		//set View Matrices
 		glm::mat4 viewMat;
