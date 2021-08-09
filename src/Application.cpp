@@ -10,6 +10,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <vector>
 
 //窗口大小
 const unsigned int SCR_WIDTH = 1200;
@@ -90,7 +91,27 @@ Camera camera(glm::vec3(0, 0, 3.0f), glm::vec3(0, 1.0f, 0));
 #pragma endregion
 
 #pragma region Light Declare
-LightPoint light(glm::vec3(5.0f, 5.0f, 2.5f), glm::vec3(glm::radians(180.0f - 45.0f), glm::radians(45.0f), 0));
+
+LightDirectional lightDirectional(glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.4f, 0.4f, 0.4f), 
+	glm::vec3(0.5f, 0.5f, 0.5f),glm::vec3(-0.2f, -1.0f, -0.3f));
+
+std::vector <LightPoint> lightPoint = {
+	LightPoint(glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f),
+	pointLightPositions[0], 1.0f, 0.09f, 0.032f),
+
+	LightPoint(glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f),
+	pointLightPositions[1], 1.0f, 0.09f, 0.032f),
+
+	LightPoint(glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f),
+	pointLightPositions[2], 1.0f, 0.09f, 0.032f),
+
+	LightPoint(glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f),
+	pointLightPositions[3], 1.0f, 0.09f, 0.032f)
+};
+
+LightSpot lightSpot(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
+	camera.Position, camera.Front, 1.0f, 0.09f, 0.032f, glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(15.0f)));
+
 #pragma endregion
 
 #pragma region FullScreen
@@ -225,39 +246,46 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 }
 #pragma endregion
 
-unsigned int LoadImageToGpu(const char* filename, int internalformat, GLenum format, int textureSlot)
+unsigned int loadTexture(char const* path, int textureSlot)
 {
-	unsigned int TexBuffer;
-	glGenTextures(1, &TexBuffer);
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
 	glActiveTexture(GL_TEXTURE0 + textureSlot);  //激活纹理单元
-	glBindTexture(GL_TEXTURE_2D, TexBuffer);  //绑定纹理单元
+	glBindTexture(GL_TEXTURE_2D, textureID);  //绑定纹理单元
 
-	// set the texture wrapping parameters   环绕方式
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	// set texture filtering parameters    过滤方式
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	int width, height, nrChannels;
+	int width, height, nrComponents;
 	stbi_set_flip_vertically_on_load(true); //翻转y轴
-	unsigned char* data = stbi_load(filename, &width, &height, &nrChannels, 0);
+	unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
 	if (data)
 	{
-		glTexImage2D(GL_TEXTURE_2D, 0, internalformat, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		GLenum format;
+		if (nrComponents == 1)
+			format = GL_RED;
+		else if (nrComponents == 3)
+			format = GL_RGB;
+		else if (nrComponents == 4)
+			format = GL_RGBA;
+
+		glBindTexture(GL_TEXTURE_2D, textureID);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	}
 	else
 	{
-		std::cout << "load image failed." << std::endl;
+		std::cout << "Texture failed to load at path: " << path << std::endl;
 	}
 	stbi_image_free(data);
-	return TexBuffer;
+	return textureID;
 }
 
 int main(void)
 {
-#pragma region Open a Window
+	#pragma region Open a Window
 	/* Initialize the Library (初始化GLFW库) */
 	if (!glfwInit())
 	{
@@ -309,21 +337,21 @@ int main(void)
 	glEnable(GL_DEPTH_TEST);
 #pragma endregion
 
-#pragma region Init Shader Program
+	#pragma region Init Shader Program
 	Shader* ourShader = new Shader("E:\\Code\\CPP\\OpenGL\\OpenGL\\src\\vertexSource.vert", "E:\\Code\\CPP\\OpenGL\\OpenGL\\src\\fragmentSource.frag");
 	Shader* lightShader = new Shader("E:\\Code\\CPP\\OpenGL\\OpenGL\\src\\lightCube.vert", "E:\\Code\\CPP\\OpenGL\\OpenGL\\src\\lightCube.frag");
 #pragma  endregion
 
-#pragma region Init Material
+	#pragma region Init Material
 	Material *ourMaterial=new Material(
 		ourShader,
 		glm::vec3(0.0f, 0.0f, 0.0f),
-		LoadImageToGpu("E:\\Code\\CPP\\OpenGL\\OpenGL\\src\\container2.png", GL_RGBA, GL_RGBA, 0),
-		LoadImageToGpu("E:\\Code\\CPP\\OpenGL\\OpenGL\\src\\container2_specular.png", GL_RGBA, GL_RGBA, 1),
+		loadTexture("E:\\Code\\CPP\\OpenGL\\OpenGL\\src\\container2.png", 0),
+		loadTexture("E:\\Code\\CPP\\OpenGL\\OpenGL\\src\\container2_specular.png", 1),
 		32.0f);
 #pragma endregion
 
-#pragma region Init and Load Models to VAO,VBO
+	#pragma region Init and Load Models to VAO,VBO
 	/* 创建VAO(顶点数组对象) */
 	unsigned int VAO;
 	glGenVertexArrays(1, &VAO);
@@ -372,7 +400,7 @@ int main(void)
 
 		for (int i = 0; i < 10; i++)
 		{
-#pragma region Prepare MVP matrices
+			#pragma region Prepare MVP matrices
 			//set Model matrix
 			glm::mat4 modelMat;
 			modelMat = glm::translate(modelMat, cubePositions[i]);
@@ -385,29 +413,73 @@ int main(void)
 			projMat = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 #pragma endregion
 
-			//set Material -> Shader Program
+			//set Shader Program
 			ourShader->use();
-			//set Material -> Uniforms
 
-			ourShader->setUniform("mixValue", mixValue);
+			//set MVP matrices -> Uniforms
 			ourShader->setMat4("modelMat", modelMat);
 			ourShader->setMat4("viewMat", viewMat);
 			ourShader->setMat4("projMat", projMat);
+
+			//set Material -> Uniforms
 			ourShader->setVec3("viewPos", camera.Position);
 
+			//set Material -> Uniforms
 			ourMaterial->shader->setVec3("material.ambient", ourMaterial->ambient);
 			ourMaterial->shader->setUniform("material.diffuse", 0);
 			ourMaterial->shader->setUniform("material.specular", 1);
 			ourMaterial->shader->setUniform("material.shininess", ourMaterial->shiness);
 
-			ourShader->setVec3("light.ambient", 0.1f, 0.1f, 0.1f);
-			ourShader->setVec3("light.diffuse", 0.8f, 0.8f, 0.8f);
-			ourShader->setVec3("light.specular", 0.1f, 0.1f, 0.1f);
-			ourShader->setVec3("light.position", light.position);
-			//ourShader->setVec3("light.direction", light.direction);
-			ourShader->setUniform("light.constant", light.constant);
-			ourShader->setUniform("light.linear", light.linear);
-			ourShader->setUniform("light.quadratic", light.quadratic);
+			// directional light
+			ourShader->setVec3("dirLight.direction",lightDirectional.direction);
+			ourShader->setVec3("dirLight.ambient", lightDirectional.ambient);
+			ourShader->setVec3("dirLight.diffuse", lightDirectional.diffuse);
+			ourShader->setVec3("dirLight.specular", lightDirectional.specular);
+
+			// point light
+			ourShader->setVec3("pointLights[0].position", lightPoint[0].position);
+			ourShader->setVec3("pointLights[0].ambient", lightPoint[0].ambient);
+			ourShader->setVec3("pointLights[0].diffuse", lightPoint[0].diffuse);
+			ourShader->setVec3("pointLights[0].specular", lightPoint[0].specular);
+			ourShader->setUniform("pointLights[0].constant", lightPoint[0].constant);
+			ourShader->setUniform("pointLights[0].linear", lightPoint[0].linear);
+			ourShader->setUniform("pointLights[0].quadratic", lightPoint[0].quadratic);
+
+			ourShader->setVec3("pointLights[1].position", lightPoint[1].position);
+			ourShader->setVec3("pointLights[1].ambient", lightPoint[1].ambient);
+			ourShader->setVec3("pointLights[1].diffuse", lightPoint[1].diffuse);
+			ourShader->setVec3("pointLights[1].specular", lightPoint[1].specular);
+			ourShader->setUniform("pointLights[1].constant", lightPoint[1].constant);
+			ourShader->setUniform("pointLights[1].linear", lightPoint[1].linear);
+			ourShader->setUniform("pointLights[1].quadratic", lightPoint[1].quadratic);
+
+			ourShader->setVec3("pointLights[2].position", lightPoint[2].position);
+			ourShader->setVec3("pointLights[2].ambient", lightPoint[2].ambient);
+			ourShader->setVec3("pointLights[2].diffuse", lightPoint[2].diffuse);
+			ourShader->setVec3("pointLights[2].specular", lightPoint[2].specular);
+			ourShader->setUniform("pointLights[2].constant", lightPoint[2].constant);
+			ourShader->setUniform("pointLights[2].linear", lightPoint[2].linear);
+			ourShader->setUniform("pointLights[2].quadratic", lightPoint[2].quadratic);
+
+			ourShader->setVec3("pointLights[3].position", lightPoint[3].position);
+			ourShader->setVec3("pointLights[3].ambient", lightPoint[3].ambient);
+			ourShader->setVec3("pointLights[3].diffuse", lightPoint[3].diffuse);
+			ourShader->setVec3("pointLights[3].specular", lightPoint[3].specular);
+			ourShader->setUniform("pointLights[3].constant", lightPoint[3].constant);
+			ourShader->setUniform("pointLights[3].linear", lightPoint[3].linear);
+			ourShader->setUniform("pointLights[3].quadratic", lightPoint[3].quadratic);
+
+			// spotLight
+			ourShader->setVec3("spotLight.position", lightSpot.position);
+			ourShader->setVec3("spotLight.direction", lightSpot.direction);
+			ourShader->setVec3("spotLight.ambient", lightSpot.ambient);
+			ourShader->setVec3("spotLight.diffuse", lightSpot.diffuse);
+			ourShader->setVec3("spotLight.specular", lightSpot.specular);
+			ourShader->setUniform("spotLight.constant", lightSpot.constant);
+			ourShader->setUniform("spotLight.linear", lightSpot.linear);
+			ourShader->setUniform("spotLight.quadratic", lightSpot.quadratic);
+			ourShader->setUniform("spotLight.cutOff", lightSpot.cutOff);
+			ourShader->setUniform("spotLight.outerCutOff", lightSpot.outerCutOff);
 
 			glBindVertexArray(VAO);
 			//DrawCall
@@ -415,25 +487,29 @@ int main(void)
 		}
 
 #pragma region Prepare lightCube MVP matrices
-		//set Model matrix
-		glm::mat4 modelMat;
-		modelMat = glm::translate(modelMat, light.position);
-		modelMat = glm::scale(modelMat, glm::vec3(0.2f)); // a smaller cube
-		//set View Matrices
-		glm::mat4 viewMat;
-		viewMat = camera.GetViewMatrix();
-		//set Projection Matrices
-		glm::mat4 projMat;
-		projMat = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		for (unsigned int i = 0; i < lightPoint.size(); i++)
+		{
+			//set Model matrix
+			glm::mat4 modelMat;
+			modelMat = glm::translate(modelMat, pointLightPositions[i]);
+			modelMat = glm::scale(modelMat, glm::vec3(0.2f)); // a smaller cube
+			//set View Matrices
+			glm::mat4 viewMat;
+			viewMat = camera.GetViewMatrix();
+			//set Projection Matrices
+			glm::mat4 projMat;
+			projMat = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+
+			lightShader->use();
+			lightShader->setMat4("modelMat", modelMat);
+			lightShader->setMat4("viewMat", viewMat);
+			lightShader->setMat4("projMat", projMat);
+
+			glBindVertexArray(lightCubeVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 #pragma endregion
-
-		lightShader->use();
-		lightShader->setMat4("modelMat", modelMat);
-		lightShader->setMat4("viewMat", viewMat);
-		lightShader->setMat4("projMat", projMat);
-
-		glBindVertexArray(lightCubeVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		
 
 		//清空缓存，准备下一次渲染循环
 		/* Swap front and back buffers (交换颜色缓冲) */

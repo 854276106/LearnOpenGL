@@ -1,49 +1,38 @@
 #include "LightSource.h"
 
-LightDirectional::LightDirectional(glm::vec3 _positon, glm::vec3 _angles, glm::vec3 _color)
-	:position(_positon), angles(_angles), color(_color)
+
+LightDirectional::LightDirectional(glm::vec3 _ambient, glm::vec3 _diffuse, glm::vec3 _specular,
+	glm::vec3 _direction, glm::vec3 _color)
+	: ambient(_ambient), diffuse(_diffuse), specular(_specular), direction(_direction), color(_color)
+
 {
-	this->UpdateDirection();
 }
 
 LightDirectional::~LightDirectional()
 {
 }
 
-void LightDirectional::UpdateDirection()
+LightPoint::LightPoint(glm::vec3 _ambient, glm::vec3 _diffuse, glm::vec3 _specular, glm::vec3 _positon,
+	float _constant, float _linear, float _quadratic, glm::vec3 _color)
+	: ambient(_ambient), diffuse(_diffuse), specular(_specular), position(_positon), 
+	constant(_constant), linear(_linear),quadratic(_quadratic), color(_color)
 {
-	this->direction = glm::vec3(0, 0, 1.0f);
-	this->direction = glm::rotateX(direction, angles.x);
-	this->direction = glm::rotateY(direction, angles.y);
-	this->direction = glm::rotateZ(direction, angles.z);
-}
 
-LightPoint::LightPoint(glm::vec3 _positon, glm::vec3 _angles, glm::vec3 _color)
-	:position(_positon), angles(_angles), color(_color)
-{
-	constant = 1.0f;
-	linear = 0.09f;
-	quadratic = 0.032f;
 }
 
 LightPoint::~LightPoint()
 {
 }
 
-LightSpot::LightSpot(glm::vec3 _positon, glm::vec3 _angles, glm::vec3 _color)
-	:position(_positon), angles(_angles), color(_color)
+
+LightSpot::LightSpot(glm::vec3 _ambient, glm::vec3 _diffuse, glm::vec3 _specular, glm::vec3 _positon, glm::vec3 _direction,
+	float _constant, float _linear, float _quadratic, float _cutOff, float _outerCutOff, glm::vec3 _color)
+	: ambient(_ambient), diffuse(_diffuse), specular(_specular), position(_positon), direction(_direction),
+	constant(_constant), linear(_linear), quadratic(_quadratic),
+	cutOff(_cutOff), outerCutOff(_outerCutOff), color(_color)
 {
-	this->UpdateDirection();
 }
 
 LightSpot::~LightSpot()
 {
-}
-
-void LightSpot::UpdateDirection()
-{
-	this->direction = glm::vec3(0, 0, 1.0f);
-	this->direction = glm::rotateX(direction, angles.x);
-	this->direction = glm::rotateY(direction, angles.y);
-	this->direction = glm::rotateZ(direction, angles.z);
 }
