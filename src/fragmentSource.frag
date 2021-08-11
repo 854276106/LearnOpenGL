@@ -9,7 +9,7 @@ struct Material {
 
 struct DirLight {
     vec3 direction;
-	
+	vec3 color;
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
@@ -17,7 +17,7 @@ struct DirLight {
 
 struct PointLight {
     vec3 position;
-    
+    vec3 color;
     //Ë¥¼õÏµÊý
     float constant;
     float linear;
@@ -31,6 +31,7 @@ struct PointLight {
 struct SpotLight {
     vec3 position;
     vec3 direction;
+    vec3 color;
     float cutOff;
     float outerCutOff;
   
@@ -93,7 +94,7 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
     vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));
     vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));
     vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));
-    return (ambient + diffuse + specular);
+    return (ambient + diffuse + specular) * light.color;
 }
 
 // calculates the color when using a point light.
@@ -115,7 +116,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     ambient *= attenuation;
     diffuse *= attenuation;
     specular *= attenuation;
-    return (ambient + diffuse + specular);
+    return (ambient + diffuse + specular) * light.color;
 }
 
 // calculates the color when using a spot light.
@@ -141,5 +142,5 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     ambient *= attenuation * intensity;
     diffuse *= attenuation * intensity;
     specular *= attenuation * intensity;
-    return (ambient + diffuse + specular);
+    return (ambient + diffuse + specular) * light.color;
 }

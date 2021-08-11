@@ -5,6 +5,8 @@
 #include "Camera.hpp"
 #include "Material.h"
 #include "LightSource.h"
+#include "Mesh.h"
+#include "Model.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include <glm/glm.hpp>
@@ -92,25 +94,25 @@ Camera camera(glm::vec3(0, 0, 3.0f), glm::vec3(0, 1.0f, 0));
 
 #pragma region Light Declare
 
-LightDirectional lightDirectional(glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.4f, 0.4f, 0.4f), 
-	glm::vec3(0.5f, 0.5f, 0.5f),glm::vec3(-0.2f, -1.0f, -0.3f));
+LightDirectional lightDirectional(glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.4f, 0.4f, 0.4f),
+	glm::vec3(0.5f, 0.5f, 0.5f), glm::vec3(-0.2f, -1.0f, -0.3f));
 
 std::vector <LightPoint> lightPoint = {
 	LightPoint(glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f),
-	pointLightPositions[0], 1.0f, 0.09f, 0.032f),
+	pointLightPositions[0], 1.0f, 0.09f, 0.032f, glm::vec3(0.0f,0.9f,0.8f)),
 
 	LightPoint(glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f),
-	pointLightPositions[1], 1.0f, 0.09f, 0.032f),
+	pointLightPositions[1], 1.0f, 0.09f, 0.032f, glm::vec3(1.0f,0.9f,0.8f)),
 
 	LightPoint(glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f),
-	pointLightPositions[2], 1.0f, 0.09f, 0.032f),
+	pointLightPositions[2], 1.0f, 0.09f, 0.032f, glm::vec3(1.0f,0.9f,0.8f)),
 
 	LightPoint(glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f),
-	pointLightPositions[3], 1.0f, 0.09f, 0.032f)
+	pointLightPositions[3], 1.0f, 0.09f, 0.032f, glm::vec3(1.0f,0.9f,0.8f))
 };
 
 LightSpot lightSpot(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f, 1.0f, 1.0f),
-	camera.Position, camera.Front, 1.0f, 0.09f, 0.032f, glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(15.0f)));
+	1.0f, 0.09f, 0.032f, glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(15.0f)), glm::vec3(1.0f, 0.0f, 0.0f));
 
 #pragma endregion
 
@@ -128,7 +130,7 @@ void FullScreen(GLFWwindow* window)
 	else if (isFullScreen == true)
 	{
 		glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, SCR_WIDTH, SCR_HEIGHT, mode->refreshRate);
-	
+
 		isFullScreen = false;
 	}
 }
@@ -151,6 +153,7 @@ void MaxScreen(GLFWwindow* window)
 #pragma endregion
 
 #pragma region Input Declare
+
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -246,6 +249,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 }
 #pragma endregion
 
+
 unsigned int loadTexture(char const* path, int textureSlot)
 {
 	unsigned int textureID;
@@ -283,8 +287,9 @@ unsigned int loadTexture(char const* path, int textureSlot)
 	return textureID;
 }
 
-int main(void)
+int main(int argc, char* argv[])
 {
+	std::string exePath = argv[0];
 	#pragma region Open a Window
 	/* Initialize the Library (初始化GLFW库) */
 	if (!glfwInit())
@@ -313,7 +318,7 @@ int main(void)
 	glfwMakeContextCurrent(window);
 
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); //隐藏鼠标光标
+	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); //隐藏鼠标光标
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
 	glfwSetKeyCallback(window, key_callback);
@@ -351,35 +356,13 @@ int main(void)
 		32.0f);
 #pragma endregion
 
-	#pragma region Init and Load Models to VAO,VBO
-	/* 创建VAO(顶点数组对象) */
-	unsigned int VAO;
-	glGenVertexArrays(1, &VAO);
-	unsigned int lightCubeVAO;
-	glGenVertexArrays(1, &lightCubeVAO);
-	/* 创建VBO顶点缓冲对象 */
-	unsigned int VBO;
-	glGenBuffers(1, &VBO);
-	//绑定缓冲类型 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO); //从这一刻起，我们使用的任何（在GL_ARRAY_BUFFER目标上的）缓冲调用都会用来配置当前绑定的缓冲(VBO)
-	//将用户数据复制到当前绑定缓冲(GL_ARRAY_BUFFER)    将数据从CPU复制到GPU
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);//参数4：显卡处理数据的方式
-	/* 设置顶点属性指针 */
-	glBindVertexArray(VAO);
-	//位置属性
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	// 光照属性
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-	// 纹理属性
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
+	#pragma region Init Mesh
+	//Mesh lightCube(vertices);
+#pragma endregion
 
-	glBindVertexArray(lightCubeVAO);
-	//位置属性
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
+	#pragma region Init Model
+	Model model(exePath.substr(0, exePath.find_last_of("\\")) + "\\model\\nanosuit.obj");
+	
 #pragma endregion
 
 	/* Loop until the user closes the window */
@@ -398,7 +381,73 @@ int main(void)
 		/* 清除缓冲区 */
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);//当前可写的颜色缓冲
 
-		for (int i = 0; i < 10; i++)
+		#pragma region set Uniform
+
+		//set Shader Program
+		ourShader->use();
+
+		ourShader->setVec3("viewPos", camera.Position);
+
+		// directional light
+		ourShader->setVec3("dirLight.direction", lightDirectional.direction);
+		ourShader->setVec3("dirLight.color", lightDirectional.color);
+		ourShader->setVec3("dirLight.ambient", lightDirectional.ambient);
+		ourShader->setVec3("dirLight.diffuse", lightDirectional.diffuse);
+		ourShader->setVec3("dirLight.specular", lightDirectional.specular);
+
+		// point light
+		ourShader->setVec3("pointLights[0].position", lightPoint[0].position);
+		ourShader->setVec3("pointLights[0].color", lightPoint[0].color);
+		ourShader->setVec3("pointLights[0].ambient", lightPoint[0].ambient);
+		ourShader->setVec3("pointLights[0].diffuse", lightPoint[0].diffuse);
+		ourShader->setVec3("pointLights[0].specular", lightPoint[0].specular);
+		ourShader->setUniform("pointLights[0].constant", lightPoint[0].constant);
+		ourShader->setUniform("pointLights[0].linear", lightPoint[0].linear);
+		ourShader->setUniform("pointLights[0].quadratic", lightPoint[0].quadratic);
+
+		ourShader->setVec3("pointLights[1].position", lightPoint[1].position);
+		ourShader->setVec3("pointLights[1].color", lightPoint[1].color);
+		ourShader->setVec3("pointLights[1].ambient", lightPoint[1].ambient);
+		ourShader->setVec3("pointLights[1].diffuse", lightPoint[1].diffuse);
+		ourShader->setVec3("pointLights[1].specular", lightPoint[1].specular);
+		ourShader->setUniform("pointLights[1].constant", lightPoint[1].constant);
+		ourShader->setUniform("pointLights[1].linear", lightPoint[1].linear);
+		ourShader->setUniform("pointLights[1].quadratic", lightPoint[1].quadratic);
+
+		ourShader->setVec3("pointLights[2].position", lightPoint[2].position);
+		ourShader->setVec3("pointLights[2].color", lightPoint[2].color);
+		ourShader->setVec3("pointLights[2].ambient", lightPoint[2].ambient);
+		ourShader->setVec3("pointLights[2].diffuse", lightPoint[2].diffuse);
+		ourShader->setVec3("pointLights[2].specular", lightPoint[2].specular);
+		ourShader->setUniform("pointLights[2].constant", lightPoint[2].constant);
+		ourShader->setUniform("pointLights[2].linear", lightPoint[2].linear);
+		ourShader->setUniform("pointLights[2].quadratic", lightPoint[2].quadratic);
+
+		ourShader->setVec3("pointLights[3].position", lightPoint[3].position);
+		ourShader->setVec3("pointLights[3].color", lightPoint[3].color);
+		ourShader->setVec3("pointLights[3].ambient", lightPoint[3].ambient);
+		ourShader->setVec3("pointLights[3].diffuse", lightPoint[3].diffuse);
+		ourShader->setVec3("pointLights[3].specular", lightPoint[3].specular);
+		ourShader->setUniform("pointLights[3].constant", lightPoint[3].constant);
+		ourShader->setUniform("pointLights[3].linear", lightPoint[3].linear);
+		ourShader->setUniform("pointLights[3].quadratic", lightPoint[3].quadratic);
+
+		// spotLight
+		ourShader->setVec3("spotLight.position", camera.Position);
+		ourShader->setVec3("spotLight.direction", camera.Front);
+		ourShader->setVec3("spotLight.color", lightSpot.color);
+		ourShader->setVec3("spotLight.ambient", lightSpot.ambient);
+		ourShader->setVec3("spotLight.diffuse", lightSpot.diffuse);
+		ourShader->setVec3("spotLight.specular", lightSpot.specular);
+		ourShader->setUniform("spotLight.constant", lightSpot.constant);
+		ourShader->setUniform("spotLight.linear", lightSpot.linear);
+		ourShader->setUniform("spotLight.quadratic", lightSpot.quadratic);
+		ourShader->setUniform("spotLight.cutOff", lightSpot.cutOff);
+		ourShader->setUniform("spotLight.outerCutOff", lightSpot.outerCutOff);
+
+#pragma endregion
+		
+		for (int i = 0; i < 1; i++)
 		{
 			#pragma region Prepare MVP matrices
 			//set Model matrix
@@ -422,68 +471,14 @@ int main(void)
 			ourShader->setMat4("projMat", projMat);
 
 			//set Material -> Uniforms
-			ourShader->setVec3("viewPos", camera.Position);
-
-			//set Material -> Uniforms
 			ourMaterial->shader->setVec3("material.ambient", ourMaterial->ambient);
 			ourMaterial->shader->setUniform("material.diffuse", 0);
 			ourMaterial->shader->setUniform("material.specular", 1);
 			ourMaterial->shader->setUniform("material.shininess", ourMaterial->shiness);
 
-			// directional light
-			ourShader->setVec3("dirLight.direction",lightDirectional.direction);
-			ourShader->setVec3("dirLight.ambient", lightDirectional.ambient);
-			ourShader->setVec3("dirLight.diffuse", lightDirectional.diffuse);
-			ourShader->setVec3("dirLight.specular", lightDirectional.specular);
-
-			// point light
-			ourShader->setVec3("pointLights[0].position", lightPoint[0].position);
-			ourShader->setVec3("pointLights[0].ambient", lightPoint[0].ambient);
-			ourShader->setVec3("pointLights[0].diffuse", lightPoint[0].diffuse);
-			ourShader->setVec3("pointLights[0].specular", lightPoint[0].specular);
-			ourShader->setUniform("pointLights[0].constant", lightPoint[0].constant);
-			ourShader->setUniform("pointLights[0].linear", lightPoint[0].linear);
-			ourShader->setUniform("pointLights[0].quadratic", lightPoint[0].quadratic);
-
-			ourShader->setVec3("pointLights[1].position", lightPoint[1].position);
-			ourShader->setVec3("pointLights[1].ambient", lightPoint[1].ambient);
-			ourShader->setVec3("pointLights[1].diffuse", lightPoint[1].diffuse);
-			ourShader->setVec3("pointLights[1].specular", lightPoint[1].specular);
-			ourShader->setUniform("pointLights[1].constant", lightPoint[1].constant);
-			ourShader->setUniform("pointLights[1].linear", lightPoint[1].linear);
-			ourShader->setUniform("pointLights[1].quadratic", lightPoint[1].quadratic);
-
-			ourShader->setVec3("pointLights[2].position", lightPoint[2].position);
-			ourShader->setVec3("pointLights[2].ambient", lightPoint[2].ambient);
-			ourShader->setVec3("pointLights[2].diffuse", lightPoint[2].diffuse);
-			ourShader->setVec3("pointLights[2].specular", lightPoint[2].specular);
-			ourShader->setUniform("pointLights[2].constant", lightPoint[2].constant);
-			ourShader->setUniform("pointLights[2].linear", lightPoint[2].linear);
-			ourShader->setUniform("pointLights[2].quadratic", lightPoint[2].quadratic);
-
-			ourShader->setVec3("pointLights[3].position", lightPoint[3].position);
-			ourShader->setVec3("pointLights[3].ambient", lightPoint[3].ambient);
-			ourShader->setVec3("pointLights[3].diffuse", lightPoint[3].diffuse);
-			ourShader->setVec3("pointLights[3].specular", lightPoint[3].specular);
-			ourShader->setUniform("pointLights[3].constant", lightPoint[3].constant);
-			ourShader->setUniform("pointLights[3].linear", lightPoint[3].linear);
-			ourShader->setUniform("pointLights[3].quadratic", lightPoint[3].quadratic);
-
-			// spotLight
-			ourShader->setVec3("spotLight.position", lightSpot.position);
-			ourShader->setVec3("spotLight.direction", lightSpot.direction);
-			ourShader->setVec3("spotLight.ambient", lightSpot.ambient);
-			ourShader->setVec3("spotLight.diffuse", lightSpot.diffuse);
-			ourShader->setVec3("spotLight.specular", lightSpot.specular);
-			ourShader->setUniform("spotLight.constant", lightSpot.constant);
-			ourShader->setUniform("spotLight.linear", lightSpot.linear);
-			ourShader->setUniform("spotLight.quadratic", lightSpot.quadratic);
-			ourShader->setUniform("spotLight.cutOff", lightSpot.cutOff);
-			ourShader->setUniform("spotLight.outerCutOff", lightSpot.outerCutOff);
-
-			glBindVertexArray(VAO);
 			//DrawCall
-			glDrawArrays(GL_TRIANGLES, 0, 36);//VAO画图
+			//cube.Draw(*(ourMaterial->shader));
+			model.Draw(*(ourMaterial->shader));
 		}
 
 #pragma region Prepare lightCube MVP matrices
@@ -505,8 +500,7 @@ int main(void)
 			lightShader->setMat4("viewMat", viewMat);
 			lightShader->setMat4("projMat", projMat);
 
-			glBindVertexArray(lightCubeVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
+			//lightCube.Draw(*lightShader);
 		}
 #pragma endregion
 		
@@ -518,8 +512,8 @@ int main(void)
 		glfwPollEvents();
 	}
 
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
+	//glDeleteVertexArrays(1, &VAO);
+	//glDeleteBuffers(1, &VBO);
 	glfwTerminate();
 
 	return 0;

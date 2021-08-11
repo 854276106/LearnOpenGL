@@ -1,5 +1,12 @@
 #include "Mesh.h"
 
+Mesh::Mesh(float vertices[])
+{
+	this->vertices.resize(36);
+	memcpy(&(this->vertices[0]), vertices, 36 * 8 * sizeof(float));
+	setupMesh();
+}
+
 Mesh::Mesh(std::vector<Vertex> _vertices, std::vector<unsigned int> _indices, std::vector<Texture> _textures)
 	:vertices(_vertices),indices(_indices),textures(_textures)
 {

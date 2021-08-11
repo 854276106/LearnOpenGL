@@ -41,10 +41,10 @@ public:
 class LightSpot
 {
 public:
-	LightSpot(glm::vec3 _ambient, glm::vec3 _diffuse, glm::vec3 _specular, glm::vec3 _positon, glm::vec3 _direction,
-		float _constant, float _linear, float _quadratic, float _cutOff, float _outerCutOff, glm::vec3 _color = glm::vec3(1.0f, 1.0f, 1.0f));
+	LightSpot(glm::vec3 _ambient, glm::vec3 _diffuse, glm::vec3 _specular, 
+		float _constant, float _linear, float _quadratic, float _cutOff, float _outerCutOff, 
+		glm::vec3 _color = glm::vec3(1.0f, 1.0f, 1.0f));
 	~LightSpot();
-	void UpdateDirection();
 public:
 	glm::vec3 ambient;
 	glm::vec3 diffuse;

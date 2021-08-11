@@ -25,9 +25,9 @@ LightPoint::~LightPoint()
 }
 
 
-LightSpot::LightSpot(glm::vec3 _ambient, glm::vec3 _diffuse, glm::vec3 _specular, glm::vec3 _positon, glm::vec3 _direction,
+LightSpot::LightSpot(glm::vec3 _ambient, glm::vec3 _diffuse, glm::vec3 _specular, 
 	float _constant, float _linear, float _quadratic, float _cutOff, float _outerCutOff, glm::vec3 _color)
-	: ambient(_ambient), diffuse(_diffuse), specular(_specular), position(_positon), direction(_direction),
+	: ambient(_ambient), diffuse(_diffuse), specular(_specular),
 	constant(_constant), linear(_linear), quadratic(_quadratic),
 	cutOff(_cutOff), outerCutOff(_outerCutOff), color(_color)
 {

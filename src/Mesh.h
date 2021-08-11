@@ -22,6 +22,7 @@ struct Texture
 class Mesh
 {
 public:
+    Mesh(float vertices[]);
     Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
     ~Mesh();
 public:
